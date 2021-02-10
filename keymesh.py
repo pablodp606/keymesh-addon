@@ -233,6 +233,7 @@ class KeymeshPanel(bpy.types.Panel):
 def register():
     bpy.utils.register_class(KeyframeMesh)
     bpy.utils.register_class(PurgeKeymeshData)
+    bpy.utils.register_class(InitializeHandler)
     bpy.utils.register_class(KeymeshPanel)
     bpy.app.handlers.load_post.append(km_frame_handler)
     bpy.app.handlers.frame_change_post.clear()
