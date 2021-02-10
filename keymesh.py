@@ -243,6 +243,7 @@ def register():
 def unregister():
     bpy.utils.unregister_class(KeyframeMesh)
     bpy.utils.unregister_class(PurgeKeymeshData)
+    bpy.utils.unregister_class(InitializeHandler)
     bpy.utils.unregister_class(KeymeshPanel)
     bpy.app.handlers.load_post.remove(km_frame_handler)
     bpy.app.handlers.frame_change_post.clear()
