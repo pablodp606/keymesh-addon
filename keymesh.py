@@ -1,5 +1,6 @@
 import bpy
 import re
+from bpy.app.handlers import persistent
  
 bl_info = {
     "name": "Keymesh Alpha",
@@ -76,13 +77,14 @@ def keymesh_insert_keyframe(object):
         for kf in fcurve.keyframe_points:
             kf.interpolation = 'CONSTANT'
 
-    bpy.app.handlers.frame_change_pre.clear()
-    bpy.app.handlers.frame_change_pre.append(updateKeymesh)
+    bpy.app.handlers.frame_change_post.clear()
+    bpy.app.handlers.frame_change_post.append(updateKeymesh)
  
 class KeyframeMesh(bpy.types.Operator):
     """Tooltip"""
     bl_idname = "object.keyframe_mesh"
     bl_label = "Keyframe Mesh"
+    bl_options = {'REGISTER', 'UNDO'}
  
     @classmethod
     def poll(cls, context):
@@ -187,10 +189,36 @@ class PurgeKeymeshData(bpy.types.Operator):
         return {'FINISHED'}
 
 
+@persistent        
+def km_frame_handler(dummy): # 
+    obs = bpy.context.scene.objects
+    for o in obs:    
+        if "km_datablock" and "km_id" in o: # It's a Keymesh scene
+            bpy.app.handlers.frame_change_post.clear()
+            bpy.app.handlers.frame_change_post.append(updateKeymesh) 
+            break
+
+    
+class InitializeHandler(bpy.types.Operator):  
+    """If Keymesh stops working try using this function to re-initialize it's frame handler"""
+    bl_idname = "object.initialize_handler"
+    bl_label = "Initialize Handler"
+    bl_options = {'REGISTER'} 
+ 
+    @classmethod
+    def poll(cls, context):
+        return True
+ 
+    def execute(self, context):
+        bpy.app.handlers.frame_change_post.clear()
+        bpy.app.handlers.frame_change_post.append(updateKeymesh)        
+        
+        return {'FINISHED'}
+
 
 
 class KeymeshPanel(bpy.types.Panel):
-    bl_idname = "panel.keymesh_panel"
+    bl_idname = "VIEW3D_PT_keymesh_panel"
     bl_label = "Keymesh"
     bl_category = "Keymesh"
     bl_space_type = "VIEW_3D"
@@ -199,23 +227,24 @@ class KeymeshPanel(bpy.types.Panel):
     def draw(self, context):
         self.layout.operator("object.keyframe_mesh", text="Keyframe Mesh")
         self.layout.operator("object.purge_keymesh_data", text="Purge Keymesh Data")
-                
+        self.layout.separator()
+        self.layout.operator("object.initialize_handler", text="Initialize Frame Handler")
            
 def register():
     bpy.utils.register_class(KeyframeMesh)
     bpy.utils.register_class(PurgeKeymeshData)
     bpy.utils.register_class(KeymeshPanel)
-    bpy.app.handlers.frame_change_pre.clear()
-    bpy.app.handlers.frame_change_pre.append(updateKeymesh)
-    
+    bpy.app.handlers.load_post.append(km_frame_handler)
+    bpy.app.handlers.frame_change_post.clear()
+    bpy.app.handlers.frame_change_post.append(updateKeymesh)
  
  
 def unregister():
     bpy.utils.unregister_class(KeyframeMesh)
     bpy.utils.unregister_class(PurgeKeymeshData)
     bpy.utils.unregister_class(KeymeshPanel)
-    bpy.app.handlers.frame_change_pre.clear()
-    
+    bpy.app.handlers.load_post.remove(km_frame_handler)
+    bpy.app.handlers.frame_change_post.clear()
 
 ##if __name__ == "__main__":
 ##    register() 
