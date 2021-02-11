@@ -5,12 +5,13 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Keymesh Alpha",
     "author": "Pablo Dobarro (Developer), Daniel Martinez Lara (Animation and Testing)",
-    "version": (0, 1, 0),
+    "version": (0, 1, 1),
     "blender": (2, 91, 0),
     "location": "Sidebar > KeyMesh",
     "warning": "Experimental",
     "category": "Object",
-    "doc_url": "https://www.youtube.com/watch?v=vlNsvL30TmE&feature=youtu.be",
+    "description": "This addon helps in improving your Stop Motion animation workflow. Use shortcut 'Ctrl Shift A' for faster workflows.",
+    "doc_url": "https://vimeo.com/506765863",
 }
 
 
