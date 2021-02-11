@@ -81,7 +81,7 @@ def keymesh_insert_keyframe(object):
     bpy.app.handlers.frame_change_post.append(updateKeymesh)
  
 class KeyframeMesh(bpy.types.Operator):
-    """Tooltip"""
+    """Adds a Keyframe to the currently selected Mesh, after which you can edit the mesh to keep the changes."""
     bl_idname = "object.keyframe_mesh"
     bl_label = "Keyframe Mesh"
     bl_options = {'REGISTER', 'UNDO'}
@@ -130,7 +130,7 @@ def updateKeymesh(scene):
         
         
 class PurgeKeymeshData(bpy.types.Operator):
-    """Tooltip"""
+    """Deletes all unushed Mesh data."""
     bl_idname = "object.purge_keymesh_data"
     bl_label = "Purge Keymesh Data"
  
@@ -225,11 +225,17 @@ class KeymeshPanel(bpy.types.Panel):
     bl_region_type = "UI"
  
     def draw(self, context):
-        self.layout.operator("object.keyframe_mesh", text="Keyframe Mesh")
-        self.layout.operator("object.purge_keymesh_data", text="Purge Keymesh Data")
+
+        column = self.layout.column()
+        column.scale_y = 1.5
+        column.label(text="Add Keyframe (Ctrl Shift A)")
+        column.operator("object.keyframe_mesh", text="Keyframe Mesh")
         self.layout.separator()
+        self.layout.operator("object.purge_keymesh_data", text="Purge Keymesh Data")
         self.layout.operator("object.initialize_handler", text="Initialize Frame Handler")
-           
+
+addon_keymaps = []
+
 def register():
     bpy.utils.register_class(KeyframeMesh)
     bpy.utils.register_class(PurgeKeymeshData)
@@ -238,6 +244,14 @@ def register():
     bpy.app.handlers.load_post.append(km_frame_handler)
     bpy.app.handlers.frame_change_post.clear()
     bpy.app.handlers.frame_change_post.append(updateKeymesh)
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    if kc:
+        keyMapView = kc.keymaps.new(name="3D View", space_type="VIEW_3D")
+        keyMapItem = keyMapView.keymap_items.new(
+            "object.keyframe_mesh", type="A", value="PRESS", shift=True, ctrl=True
+        )
+        addon_keymaps.append((keyMapView, keyMapItem))
  
  
 def unregister():
@@ -247,6 +261,7 @@ def unregister():
     bpy.utils.unregister_class(KeymeshPanel)
     bpy.app.handlers.load_post.remove(km_frame_handler)
     bpy.app.handlers.frame_change_post.clear()
+    addon_keymaps.clear()
 
 ##if __name__ == "__main__":
 ##    register() 
