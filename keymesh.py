@@ -69,6 +69,14 @@ def keymesh_insert_keyframe_ex(object, keymesh_frame_index):
     
 def keymesh_insert_keyframe(object):        
     new_keyframe_index = object_next_available_keyframe_index(object)
+    
+    # Gets the data that's not persistent when the Keyframe is added to the mesh
+    remesh_voxel_size = object.data.remesh_voxel_size
+    remesh_voxel_adaptivity = object.data.remesh_voxel_adaptivity
+    symmetry_x = object.data.use_mirror_x
+    symmetry_y = object.data.use_mirror_y
+    symmetry_z = object.data.use_mirror_z
+
     keymesh_insert_keyframe_ex(object, new_keyframe_index)
     
     fcurves = object.animation_data.action.fcurves
@@ -77,7 +85,14 @@ def keymesh_insert_keyframe(object):
             continue
         for kf in fcurve.keyframe_points:
             kf.interpolation = 'CONSTANT'
-
+    
+    # Restores the values of the variables that are not persistent, from before the keyframe was added.
+    object.data.remesh_voxel_size = remesh_voxel_size
+    object.data.remesh_voxel_adaptivity = remesh_voxel_adaptivity
+    bpy.context.object.data.use_mirror_x = symmetry_x
+    bpy.context.object.data.use_mirror_y = symmetry_y
+    bpy.context.object.data.use_mirror_z = symmetry_z
+    
     bpy.app.handlers.frame_change_post.clear()
     bpy.app.handlers.frame_change_post.append(updateKeymesh)
  
