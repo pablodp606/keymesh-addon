@@ -5,8 +5,8 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Keymesh Alpha",
     "author": "Pablo Dobarro (Developer), Daniel Martinez Lara (Animation and Testing)",
-    "version": (0, 1, 1),
-    "blender": (2, 91, 0),
+    "version": (0, 1, 2),
+    "blender": (2, 92, 0),
     "location": "Sidebar > KeyMesh",
     "warning": "Experimental",
     "category": "Object",
