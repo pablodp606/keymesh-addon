@@ -4,7 +4,7 @@ from bpy.app.handlers import persistent
  
 bl_info = {
     "name": "Keymesh Alpha",
-    "author": "Pablo Dobarro (Developer), Daniel Martinez Lara (Animation and Testing)",
+    "author": "Pablo Dobarro (Developer), Daniel Martinez Lara (Animation & Testing), Aldrin Mathew (Improvements)",
     "version": (0, 1, 2),
     "blender": (2, 92, 0),
     "location": "Sidebar > KeyMesh",
