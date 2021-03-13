@@ -4,13 +4,14 @@ from bpy.app.handlers import persistent
  
 bl_info = {
     "name": "Keymesh Alpha",
-    "author": "Pablo Dobarro (Developer), Daniel Martinez Lara (Animation and Testing)",
-    "version": (0, 1, 0),
-    "blender": (2, 91, 0),
+    "author": "Pablo Dobarro (Developer), Daniel Martinez Lara (Animation & Testing), Aldrin Mathew (Improvements)",
+    "version": (0, 1, 2),
+    "blender": (2, 92, 0),
     "location": "Sidebar > KeyMesh",
     "warning": "Experimental",
     "category": "Object",
-    "doc_url": "https://www.youtube.com/watch?v=vlNsvL30TmE&feature=youtu.be",
+    "description": "This addon helps in improving your Stop Motion animation workflow. Use shortcut 'Ctrl Shift A' for faster workflows.",
+    "doc_url": "https://vimeo.com/506765863",
 }
 
 
@@ -68,6 +69,14 @@ def keymesh_insert_keyframe_ex(object, keymesh_frame_index):
     
 def keymesh_insert_keyframe(object):        
     new_keyframe_index = object_next_available_keyframe_index(object)
+    
+    # Gets the data that's not persistent when the Keyframe is added to the mesh
+    remesh_voxel_size = object.data.remesh_voxel_size
+    remesh_voxel_adaptivity = object.data.remesh_voxel_adaptivity
+    symmetry_x = object.data.use_mirror_x
+    symmetry_y = object.data.use_mirror_y
+    symmetry_z = object.data.use_mirror_z
+
     keymesh_insert_keyframe_ex(object, new_keyframe_index)
     
     fcurves = object.animation_data.action.fcurves
@@ -76,12 +85,19 @@ def keymesh_insert_keyframe(object):
             continue
         for kf in fcurve.keyframe_points:
             kf.interpolation = 'CONSTANT'
-
+    
+    # Restores the values of the variables that are not persistent, from before the keyframe was added.
+    object.data.remesh_voxel_size = remesh_voxel_size
+    object.data.remesh_voxel_adaptivity = remesh_voxel_adaptivity
+    bpy.context.object.data.use_mirror_x = symmetry_x
+    bpy.context.object.data.use_mirror_y = symmetry_y
+    bpy.context.object.data.use_mirror_z = symmetry_z
+    
     bpy.app.handlers.frame_change_post.clear()
     bpy.app.handlers.frame_change_post.append(updateKeymesh)
  
 class KeyframeMesh(bpy.types.Operator):
-    """Tooltip"""
+    """Adds a Keyframe to the currently selected Mesh, after which you can edit the mesh to keep the changes."""
     bl_idname = "object.keyframe_mesh"
     bl_label = "Keyframe Mesh"
     bl_options = {'REGISTER', 'UNDO'}
@@ -130,7 +146,7 @@ def updateKeymesh(scene):
         
         
 class PurgeKeymeshData(bpy.types.Operator):
-    """Tooltip"""
+    """Deletes all unushed Mesh data."""
     bl_idname = "object.purge_keymesh_data"
     bl_label = "Purge Keymesh Data"
  
@@ -225,11 +241,17 @@ class KeymeshPanel(bpy.types.Panel):
     bl_region_type = "UI"
  
     def draw(self, context):
-        self.layout.operator("object.keyframe_mesh", text="Keyframe Mesh")
-        self.layout.operator("object.purge_keymesh_data", text="Purge Keymesh Data")
+
+        column = self.layout.column()
+        column.scale_y = 1.5
+        column.label(text="Add Keyframe (Ctrl Shift A)")
+        column.operator("object.keyframe_mesh", text="Keyframe Mesh")
         self.layout.separator()
+        self.layout.operator("object.purge_keymesh_data", text="Purge Keymesh Data")
         self.layout.operator("object.initialize_handler", text="Initialize Frame Handler")
-           
+
+addon_keymaps = []
+
 def register():
     bpy.utils.register_class(KeyframeMesh)
     bpy.utils.register_class(PurgeKeymeshData)
@@ -238,6 +260,14 @@ def register():
     bpy.app.handlers.load_post.append(km_frame_handler)
     bpy.app.handlers.frame_change_post.clear()
     bpy.app.handlers.frame_change_post.append(updateKeymesh)
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    if kc:
+        keyMapView = kc.keymaps.new(name="3D View", space_type="VIEW_3D")
+        keyMapItem = keyMapView.keymap_items.new(
+            "object.keyframe_mesh", type="A", value="PRESS", shift=True, ctrl=True
+        )
+        addon_keymaps.append((keyMapView, keyMapItem))
  
  
 def unregister():
@@ -247,6 +277,7 @@ def unregister():
     bpy.utils.unregister_class(KeymeshPanel)
     bpy.app.handlers.load_post.remove(km_frame_handler)
     bpy.app.handlers.frame_change_post.clear()
+    addon_keymaps.clear()
 
 ##if __name__ == "__main__":
 ##    register() 
