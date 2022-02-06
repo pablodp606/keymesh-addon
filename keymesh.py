@@ -1,12 +1,14 @@
 import bpy
 import re
 from bpy.app.handlers import persistent
+from bpy.props import IntProperty
+# from os.path import basename, dirname
  
 bl_info = {
     "name": "Keymesh Alpha",
     "author": "Pablo Dobarro (Developer), Daniel Martinez Lara (Animation & Testing), Aldrin Mathew (Improvements)",
-    "version": (0, 1, 2),
-    "blender": (2, 92, 0),
+    "version": (0, 2, 0),
+    "blender": (2, 91, 0),
     "location": "Sidebar > KeyMesh",
     "warning": "Experimental",
     "category": "Object",
@@ -14,6 +16,11 @@ bl_info = {
     "doc_url": "https://vimeo.com/506765863",
 }
 
+
+__package__ = "keymesh"
+
+def get_preferences(context):
+    return context.preferences.addons[__package__].preferences
 
 
 def next_available_keymesh_object_id():
@@ -66,7 +73,6 @@ def keymesh_insert_keyframe_ex(object, keymesh_frame_index):
     object["km_datablock"] = keymesh_frame_index
     object.keyframe_insert(data_path = '["km_datablock"]', frame = current_frame)
     
-    
 def keymesh_insert_keyframe(object):        
     new_keyframe_index = object_next_available_keyframe_index(object)
     
@@ -95,7 +101,54 @@ def keymesh_insert_keyframe(object):
     
     bpy.app.handlers.frame_change_post.clear()
     bpy.app.handlers.frame_change_post.append(updateKeymesh)
- 
+
+class KeymeshPreferences(bpy.types.AddonPreferences):
+    bl_idname = __package__
+
+    km_skip_count = IntProperty(name="Skip Count", default=3, min=1, max=2 ** 31 - 1, soft_min=1, soft_max=100, step=1, options={'ANIMATABLE'})
+
+class SkipFrameForward(bpy.types.Operator):
+    """Skips frames forward based on the number of frames entered by the user."""
+    bl_idname = "object.frame_forward_keyframe_mesh"
+    bl_label = "Skip Frame"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
+    def execute(self, context):
+        try:
+            km_skip_count = get_preferences(context).km_skip_count
+        except Exception as e:
+            print("Keymesh fetching skip count", e)
+            km_skip_count = 3
+        ob = context.active_object
+        bpy.context.scene.frame_current += km_skip_count
+        keymesh_insert_keyframe(ob)
+        return {'FINISHED'}
+
+class SkipFrameBackward(bpy.types.Operator):
+    """Skips frames backward based on the number of frames entered by the user."""
+    bl_idname = "object.frame_backward_keyframe_mesh"
+    bl_label = "Skip Frame"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
+    def execute(self, context):
+        try:
+            km_skip_count = get_preferences(context).km_skip_count
+        except Exception as e:
+            print("Keymesh fetching skip count", e)
+            km_skip_count = 3
+        ob = context.active_object
+        bpy.context.scene.frame_current -= km_skip_count
+        keymesh_insert_keyframe(ob)
+        return {'FINISHED'}
+
 class KeyframeMesh(bpy.types.Operator):
     """Adds a Keyframe to the currently selected Mesh, after which you can edit the mesh to keep the changes."""
     bl_idname = "object.keyframe_mesh"
@@ -239,9 +292,10 @@ class KeymeshPanel(bpy.types.Panel):
     bl_category = "Keymesh"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
+
+    km_skip_count = 3
  
     def draw(self, context):
-
         column = self.layout.column()
         column.scale_y = 1.5
         column.label(text="Add Keyframe (Ctrl Shift A)")
@@ -249,11 +303,27 @@ class KeymeshPanel(bpy.types.Panel):
         self.layout.separator()
         self.layout.operator("object.purge_keymesh_data", text="Purge Keymesh Data")
         self.layout.operator("object.initialize_handler", text="Initialize Frame Handler")
+        
+        column = self.layout.column()
+        column.scale_y = 1.5
+        column.label(text="Skip and Add")
+        row = column.row(align=True)
+        self.layout.operator("object.frame_backward_keyframe_mesh", text="<")
+        try:
+            self.km_skip_count = get_preferences(context).km_skip_count
+        except Exception as e:
+            print("Keymesh fetching skip count", e)
+            self.km_skip_count = 3
+        # self.layout.prop(self, "km_skip_count")
+        self.layout.operator("object.frame_forward_keyframe_mesh", text=">")
 
 addon_keymaps = []
 
 def register():
+    bpy.utils.register_classes_factory([KeymeshPreferences])
     bpy.utils.register_class(KeyframeMesh)
+    bpy.utils.register_class(SkipFrameForward)
+    bpy.utils.register_class(SkipFrameBackward)
     bpy.utils.register_class(PurgeKeymeshData)
     bpy.utils.register_class(InitializeHandler)
     bpy.utils.register_class(KeymeshPanel)
@@ -271,7 +341,10 @@ def register():
  
  
 def unregister():
+    bpy.utils.register_classes_factory([KeymeshPreferences])
     bpy.utils.unregister_class(KeyframeMesh)
+    bpy.utils.unregister_class(SkipFrameForward)
+    bpy.utils.unregister_class(SkipFrameBackward)
     bpy.utils.unregister_class(PurgeKeymeshData)
     bpy.utils.unregister_class(InitializeHandler)
     bpy.utils.unregister_class(KeymeshPanel)
