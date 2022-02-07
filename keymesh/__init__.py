@@ -3,7 +3,7 @@ import re
 from bpy.app.handlers import persistent
 from bpy.props import IntProperty
 
-# from os.path import basename, dirname
+from os.path import basename, dirname
 
 bl_info = {
     "name": "Keymesh Alpha",
